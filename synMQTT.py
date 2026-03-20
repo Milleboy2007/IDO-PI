@@ -1,5 +1,4 @@
 from bluedot.btcomm import BluetoothClient
-from signal import pause
 import busio
 import board
 import time
