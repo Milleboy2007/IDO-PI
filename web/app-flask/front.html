@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+    <div class="container">
+        <button id="red" onclick="commande('RED')">RED</button>
+        <button id="green" onclick="commande('GREEN')">Green</button>
+        <button id="blue" onclick="commande('BLUE')">BLUE</button>
+        <button id="off" onclick="commande('OFF')">OFF</button>
+        <input type="color" id="color" onchange="color(this.value)">
+        <div id="status"></div>
+    </div>
+
+    <script>
+        async function commande(etat) {
+            const statusDiv = document.getElementById('status');
+            try {
+                const response = await fetch('http://10.10.22.246:5000/led', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ "etat": etat })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    statusDiv.textContent = `Erreur: ${data.Erreur || 'Erreur inconnue'}`;
+                    statusDiv.style.color = 'red';
+                } else {
+                    statusDiv.textContent = `LED est a ${etat}`;
+                    statusDiv.style.color = 'green';
+                }
+            } catch (error) {
+                statusDiv.textContent = `Erreur: ${error.message}`;
+                statusDiv.style.color = 'red';
+            }
+        }
+        async function color(params) {
+            hex = params.replace(/^#/, '')
+            
+            const red = parseInt(hex.substring(0, 2), 16)
+            const green = parseInt(hex.substring(2, 4), 16)
+            const blue = parseInt(hex.substring(4, 6), 16)
+            console.log(red, green, blue)
+
+            const toSend = `${red},${green},${blue}`
+            console.log(toSend)
+            const statusDiv = document.getElementById('status');
+            try {
+                const response = await fetch('http://10.10.22.246:5000/color', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ "color": toSend })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    statusDiv.textContent = `Erreur: ${data.Erreur || 'Erreur inconnue'}`;
+                    statusDiv.style.color = 'red';
+                } else {
+                    statusDiv.textContent = `LED est a ${etat}`;
+                    statusDiv.style.color = 'green';
+                }
+            } catch (error) {
+                statusDiv.textContent = `Erreur: ${error.message}`;
+                statusDiv.style.color = 'red';
+            }
+        }
+    </script>
+</body>
+</html>
