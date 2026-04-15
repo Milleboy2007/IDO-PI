@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contrôle Smart-AP RGB</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: #1a1a1a; color: white; padding: 20px; }
+        .card { background: #333; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: inline-block; min-width: 300px; }
+        
+        h1 { color: #00d4ff; margin-bottom: 25px; }
+        
+        /* Indicateurs visuels */
+        .status-container { display: flex; justify-content: space-around; margin-bottom: 20px; }
+        .indicator { width: 80px; height: 80px; border-radius: 50%; margin: 10px auto; border: 3px solid #fff; transition: 0.3s; }
+        .label { font-size: 0.9rem; color: #bbb; margin-top: 5px; }
+
+        /* Sliders */
+        .control-group { margin: 20px 0; text-align: left; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type=range] { width: 100%; cursor: pointer; height: 8px; border-radius: 5px; background: #555; outline: none; }
+        
+        #r { accent-color: #ff4b4b; }
+        #g { accent-color: #4bff4b; }
+        #b { accent-color: #4b4bff; }
+
+        button { background: #00d4ff; border: none; padding: 12px 25px; border-radius: 5px; color: #1a1a1a; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; margin-top: 10px; width: 100%; }
+        button:hover { background: #0099cc; transform: translateY(-2px); }
+        button:active { transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1>Smart-AP Light</h1>
+        
+        <div class="status-container">
+            <div>
+                <div id="preview" class="indicator" style="background-color: rgb(0,0,0);"></div>
+                <div class="label">Aperçu</div>
+            </div>
+            <div>
+                <div id="etat_led" class="indicator" style="background-color: gray;"></div>
+                <div class="label">État LED</div>
+            </div>
+        </div>
+
+        <hr style="border: 0.5px solid #444;">
+
+        <div class="control-group">
+            <label>Rouge : <span id="valR">0</span></label>
+            <input type="range" id="r" min="0" max="255" value="0" oninput="updateUI()">
+            
+            <label>Vert : <span id="valG">0</span></label>
+            <input type="range" id="g" min="0" max="255" value="0" oninput="updateUI()">
+            
+            <label>Bleu : <span id="valB">0</span></label>
+            <input type="range" id="b" min="0" max="255" value="0" oninput="updateUI()">
+        </div>
+
+        <button onclick="envoyerCouleur()">APPLIQUER LA COULEUR</button>
+    </div>
+
+    <script>
+        const preview = document.getElementById('preview');
+        const etatLedDiv = document.getElementById('etat_led');
+
+        /**
+         * Met à jour les chiffres et le cercle 'preview' en temps réel
+         * (Exigence 4 - Feedback Visuel 1)
+         */
+        function updateUI() {
+            const r = document.getElementById('r').value;
+            const g = document.getElementById('g').value;
+            const b = document.getElementById('b').value;
+            
+            document.getElementById('valR').innerText = r;
+            document.getElementById('valG').innerText = g;
+            document.getElementById('valB').innerText = b;
+
+            preview.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;    
+        }
+
+        /**
+         * Envoie les données au serveur Flask via une requête POST
+         * (Exigence 4 - Requête Fetch & UX)
+         */
+        async function envoyerCouleur() {
+            // 1. Récupérer les valeurs des 3 sliders (r, g, b)
+            const r = document.getElementById('r').value;
+            const g = document.getElementById('g').value;
+            const b = document.getElementById('b').value;
+            // 2. Créer un objet JSON contenant ces valeurs
+            data = JSON.stringify({
+                R: r,
+                G: g,
+                B: b
+            })
+            // 3. Envoyer cet objet via une requête POST à /api/set_rgb
+            // Utiliser fetch() avec la méthode POST et les bons headers
+            try{
+                const resp = await fetch('http://192.168.4.1:5000/api/set_rgb', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: data
+                });
+            }catch (e) {
+                console.log(e)
+            }
+        }
+
+        /**
+         * Vérifie l'état réel de la LED sur le Raspberry Pi
+         * (Exigence 4 - Feedback Visuel 2)
+         */
+        setInterval(() => {
+            fetch('http://192.168.4.1:5000/api/led_state')
+                .then(res => res.json())
+                .then(data => {
+                    // Logique : Si data.power est vrai, mettre 'etat_led' en jaune (ou couleur vive)
+                    // Sinon, mettre 'etat_led' en gris.
+                    document.getElementById('etat_led').style.backgroundColor = data.power? 'rgb(0,255,0)': 'gray';
+                })
+                .catch(err => console.error("Erreur de synchronisation"));
+        }, 1000);
+    </script>
+</body>
+</html>
