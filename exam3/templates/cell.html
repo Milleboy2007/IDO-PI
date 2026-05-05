@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neo-Mood Control</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; text-align: center; background: #0f172a; color: #f8fafc; padding: 20px; }
+        .panel { background: #1e293b; border-radius: 15px; padding: 20px; max-width: 400px; margin: 20px auto; border: 2px solid #334155; }
+        .status-dot { width: 15px; height: 15px; border-radius: 50%; display: inline-block; background: gray; transition: 0.3s; }
+        .preview-circle { width: 60px; height: 60px; border-radius: 50%; margin: 10px auto; border: 3px solid #000; background-color: rgb(0,0,0); }
+        .slider-box { margin: 15px 0; padding: 15px; background: #334155; border-radius: 10px; }
+        input[type=range] { width: 85%; accent-color: #38bdf8; cursor: pointer; }
+        .btn-update { background: #38bdf8; color: #0f172a; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
+        h2 { color: #38bdf8; font-size: 1.1rem; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+    <h1>NEO-MOOD AP</h1>
+    <div class="panel">
+        <p>SYSTÈME : <span id="status-text">VÉRIFICATION...</span> <span id="dot" class="status-dot"></span></p>
+    </div>
+
+    <div class="panel">
+        <h2>CANAL 1 : AMBIANCE CHAUDE</h2>
+        <div id="preview1" class="preview-circle"></div>
+        <div class="slider-box">
+            <input type="range" id="chan1" min="0" max="255" value="0" oninput="updateVisuals(1)">
+            <p>Intensité: <span id="val1">0</span></p>
+        </div>
+        <button class="btn-update" onclick="submitMood(1)">APPLIQUER CHAUD</button>
+    </div>
+
+    <div class="panel">
+        <h2>CANAL 2 : AMBIANCE FROIDE</h2>
+        <div id="preview2" class="preview-circle"></div>
+        <div class="slider-box">
+            <input type="range" id="chan2" min="0" max="255" value="0" oninput="updateVisuals(2)">
+            <p>Intensité: <span id="val2">0</span></p>
+        </div>
+        <button class="btn-update" onclick="submitMood(2)">APPLIQUER FROID</button>
+    </div>
+
+    <script>
+        function updateVisuals(id) {
+            const val = parseInt(document.getElementById(`chan${id}`).value);
+            document.getElementById(`val${id}`).innerText = val;
+            const preview = document.getElementById(`preview${id}`);
+            if (id === 1) {
+                preview.style.backgroundColor = `rgb(${val}, ${Math.floor(val * 0.5)}, 0)`;
+            } else {
+                preview.style.backgroundColor = `rgb(${Math.floor(val * 0.2)}, ${Math.floor(val * 0.8)}, ${val})`;
+            }
+        }
+
+        function submitMood(channelId) {
+            const val = parseInt(document.getElementById(`chan${channelId}`).value);
+            fetch('http://192.168.22.1:5000/api/update_mood', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ id: channelId, val:val })
+            });
+        }
+
+        setInterval(() => {
+            fetch('http://192.168.22.1:5000/api/hardware_status')
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('status-text').innerText = data.active ? "ACTIF" : "SÉCURITÉ ACTIVÉE";
+                    document.getElementById('dot').style.backgroundColor = data.active ? "#22c55e" : "#ef4444";
+                });
+        }, 800);
+    </script>
+</body>
+</html>
